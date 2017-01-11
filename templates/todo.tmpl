@@ -1,0 +1,32 @@
+<% c++ #include "content/todo.h" %>
+<% skin whattodo %>
+<% view todo_details uses content::todo_details extends main %>
+<% template title() %><%= page_title %>: <%= id %> - <% include master::title() %><% end %>
+<% template page_content() %>
+<h2><%= todo_title %></h2>
+<% foreach item in items %>
+<div>
+<% item %>
+<div class="panel panel-<%= item.type %>">
+<div class="panel-heading">
+<h3 class="panel-title"><%= item.title %></h3>
+</div>
+<div class="panel-body">
+<p><%= item.text %></p>
+</div>
+<% if not empty item.formatted_time %>
+<div class="panel-footer">
+<span><%= item.formatted_time %></span>
+</div>
+<% end if %>
+</div>
+<% end %>
+</div>
+<% empty %>
+<div class="alert alert-info" role="alert">
+<p><strong>No History</strong> Are you sure this ToDo item exists?</p>
+</div>
+<% end %>
+<% end template %>
+<% end view %>
+<% end skin %>

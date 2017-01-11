@@ -1,2 +1,4 @@
 /ubuntu-*.log
 /.vagrant/
+/todo.db
+

@@ -1,0 +1,15 @@
+<% c++ #include "content/new.h" %>
+<% skin whattodo %>
+<% view new_todo uses content::new_todo extends main %>
+<% template page_content() %>
+<% if error %>
+<div class="alert alert-danger">
+<p><strong>Error!</strong> An error occurred and your todo could not be saved.</p>
+</div>
+<% end if %>
+<form method="post" action=""><% csrf %>
+<% form as_p form %>
+</form>
+<% end template %>
+<% end view %>
+<% end skin %>

@@ -1,0 +1,27 @@
+<% c++ #include "content/login.h" %>
+<% skin whattodo %>
+<% view login uses content::login extends master %>
+<% template title() %><%= page_title %> - <% include master::title() %><% end %>
+<% template body() %>
+<div class="header" style="padding-bottom: 8px">
+<nav>
+<ul class="nav nav-pills pull-right">
+<li class="active" role="presentation"><a href="<% url "/login" %>">Login</a></li>
+</ul>
+</nav>
+<h3 class="text-muted"><% include title() %></h3>
+</div>
+<div class="content">
+<% if login_failed %>
+<div class="alert alert-danger">
+<p><strong>Access Denied!</strong> You're username and password don't match
+anyone in our database</p>
+</div>
+<% end %>
+<form method="post" action=""><% csrf %>
+<% form as_p form %>
+</form>
+</div>
+<% end template %>
+<% end view %>
+<% end skin %>

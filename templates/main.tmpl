@@ -1,0 +1,52 @@
+<% c++ #include "content/main.h" %>
+<% skin whattodo %>
+<% view main uses content::main extends master %>
+<% template title() %><%= page_title %> - <% include master::title() %><% end %>
+<% template sidebar() %>
+<div class="alert alert-success" role="alert">
+<p>This is the right sidebar</a>
+</div>
+<% end template %>
+<% template page_content() %>
+<div class="alert alert-success" role="alert">
+<p>This is the default page content<p>
+</div>
+<% end template %>
+<% template body() %>
+<div class="header" style="padding-bottom: 8px">
+<nav>
+<ul class="nav nav-pills pull-right">
+<li class="active" role="presentation"><a href="<% url "/" %>">Home</a></li>
+<li role="presentation"><a href="<% url "/new" %>">New</a></li>
+<li role="presentation"><a href="<% url "/logout" %>">Logout</a></li>
+</ul>
+</nav>
+<h3 class="text-muted"><% include title() %></h3>
+</div>
+<div class="row">
+<div class="col-md-3 col-md-push-9">
+<% include sidebar() %>
+</div>
+<div class="col-md-6">
+<% include page_content() %>
+</div>
+<div class="col-md-3 col-md-pull-9">
+<% foreach todo in todos %>
+<div class="list-group">
+<% item %>
+<a href="<% url "/todo" using todo.id%>" class="list-group-item list-group-item-<%= todo.type %>">
+<h4 class="list-group-item-heading">#<%= todo.id %> - <%= todo.title %></h4>
+<p class="list-group-item-text"><%= todo.description %></p>
+</a>
+<% end %>
+</div>
+<% empty %>
+<div class="alert alert-info" role="alert">
+<p><strong>Nothing Here.</strong> You don't have any ToDos, <a href="<% url "/new" %>" class="alert-link">create one</a>?</p>
+</div>
+<% end %>
+</div>
+</div>
+<% end template %>
+<% end view %>
+<% end skin %>

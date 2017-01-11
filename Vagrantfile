@@ -66,7 +66,7 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
     apt-get update
-    apt-get install -y cmake build-essential libpcre3-dev zlib1g-dev libgcrypt11-dev libicu-dev python libsqlite3-dev
+    apt-get install -y cmake build-essential libpcre3-dev zlib1g-dev libgcrypt11-dev libicu-dev python libsqlite3-dev libcrypto++-dev
   SHELL
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     cd ~/
