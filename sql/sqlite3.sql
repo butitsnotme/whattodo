@@ -1,11 +1,12 @@
 BEGIN TRANSACTION;
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`username`	TEXT NOT NULL UNIQUE,
-	`salt`	TEXT NOT NULL UNIQUE,
-	`password`	TEXT NOT NULL
+	`password`	TEXT NOT NULL DEFAULT "INVALID"
 );
-CREATE TABLE "todos" (
+DROP TABLE IF EXISTS `todos`;
+CREATE TABLE `todos` (
 	`user`	INTEGER NOT NULL,
 	`title`	TEXT,
 	`description`	TEXT,
@@ -17,12 +18,14 @@ CREATE TABLE "todos" (
 	`priority`	INTEGER,
 	`status`	TEXT
 );
+DROP TABLE IF EXISTS `history`;
 CREATE TABLE `history` (
 	`todo`	INTEGER,
 	`type`	TEXT,
 	`content`	TEXT,
 	`timestamp`	INTEGER
 );
+DROP TABLE IF EXISTS `blockedby`;
 CREATE TABLE `blockedby` (
 	`blocked`	INTEGER NOT NULL,
 	`blocking`	INTEGER NOT NULL,

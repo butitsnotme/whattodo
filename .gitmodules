@@ -1,3 +1,0 @@
-[submodule "lib/approxidate"]
-	path = lib/approxidate
-	url = git@github.com:thatguystone/approxidate

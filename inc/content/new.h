@@ -7,10 +7,8 @@
 #include <iomanip>
 #include <ctime>
 
-extern "C" {
-#include "approxidate.h"
-}
 #include "content/main.h"
+#include "whattodo.h"
 
 namespace content {
 
@@ -60,13 +58,12 @@ struct todo_create_form : public cppcms::form {
     }
 
     if (due.set() && "" != due.value()) {
-      struct timeval tv;
-      const char *dv = due.value().c_str();
-      if (0 != approxidate(dv, &tv)) {
+      int time = whattodo::get_time(due.value());
+      if (-1 != time) {
         due.valid(false);
         return false;
       }
-      due_time = tv.tv_sec;
+      due_time = time;
     }
     return true;
   }

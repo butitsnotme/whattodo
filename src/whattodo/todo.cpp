@@ -221,7 +221,7 @@ void whattodo::todo::set_parent(int parent)
   }
 
   todo t(user, parent);
-  if (!t.is_valid()) {
+  if (!t.is_valid() && 0 != parent) {
     return;
   }
 
@@ -295,7 +295,7 @@ void whattodo::todo::set_priority(int priority)
 
 void whattodo::todo::add_worked(int worked)
 {
-  if (!valid || get_worked() == worked) {
+  if (!valid || 0 == worked) {
     return;
   }
 
@@ -315,7 +315,7 @@ void whattodo::todo::add_worked(int hours, int minutes)
 
 void whattodo::todo::add_comment(std::string comment)
 {
-  if (!valid) {
+  if (!valid || "" == comment) {
     return;
   }
 
@@ -364,7 +364,7 @@ void whattodo::todo::remove_block(int todo_id)
   }
 
   todo::sql
-    << "DELETE FROM blockedby WHERE bocked = ? AND blocking = ?"
+    << "DELETE FROM blockedby WHERE blocked = ? AND blocking = ?"
     << id
     << todo_id
     << cppdb::exec;
@@ -474,7 +474,7 @@ int whattodo::todo::get_estimated()
   }
 
   cppdb::result res = todo::sql
-    << "SELECT estimated FROM todos WHERE user = ? AND rowid = ?"
+    << "SELECT estimate FROM todos WHERE user = ? AND rowid = ?"
     << user
     << id
     << cppdb::row;
@@ -534,6 +534,22 @@ std::shared_ptr<whattodo::todo> whattodo::todo::get_parent()
   return std::make_shared<todo>(user, parent);
 }
 
+std::list<std::shared_ptr<whattodo::todo>> whattodo::todo::get_blocking()
+{
+  std::list<std::shared_ptr<todo>> blocking;
+  if (!valid) {
+    return blocking;
+  }
+
+  cppdb::result r = todo::sql
+    << "SELECT blocked FROM blockedby WHERE blocking = ? ORDER BY blocked ASC"
+    << id;
+  while(r.next()) {
+    blocking.push_back(std::make_shared<todo>(user, r.get<int>("blocked")));
+  }
+  return blocking;
+}
+
 std::list<std::shared_ptr<whattodo::todo>> whattodo::todo::get_blocks()
 {
   if (!valid) {
@@ -558,7 +574,7 @@ bool whattodo::todo::has_block(int todo_id)
   }
 
   cppdb::result res = todo::sql
-    << "SELECT rowid FROM blockedby WHERE blocked = ? AND blocking = ?"
+    << "SELECT blocked FROM blockedby WHERE blocked = ? AND blocking = ?"
     << id
     << todo_id
     << cppdb::row;
@@ -572,7 +588,7 @@ bool whattodo::todo::has_block()
   }
 
   cppdb::result res = todo::sql
-    << "SELECT rowid FROM blockedby WHERE blocked = ?"
+    << "SELECT blocking FROM blockedby WHERE blocked = ?"
     << id;
   if (res.next()) {
     return true;
@@ -642,6 +658,11 @@ std::list<std::shared_ptr<whattodo::todo>> whattodo::todo::get_children()
     children.push_back(std::make_shared<todo>(user, r.get<int>("rowid")));
   }
   return children;
+}
+
+bool whattodo::todo::operator==(const todo &rhs)
+{
+  return (user == rhs.user && id == rhs.id);
 }
 
 void whattodo::todo::add_history(std::string type, std::string value)

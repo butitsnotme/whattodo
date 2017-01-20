@@ -69,6 +69,7 @@ public:
   int get_priority();
   std::shared_ptr<todo> get_parent();
 
+  std::list<std::shared_ptr<todo>> get_blocking();
   std::list<std::shared_ptr<todo>> get_blocks();
   bool has_block(int todo_id);
   bool has_block();
@@ -76,6 +77,7 @@ public:
   std::list<history_item> get_history();
   
   std::list<std::shared_ptr<todo>> get_children();
+  bool operator==(const todo &rhs);
 private:
   static cppdb::session sql;
   bool valid = false;

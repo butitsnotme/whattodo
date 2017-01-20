@@ -1,4 +1,6 @@
 /ubuntu-*.log
 /.vagrant/
 /todo.db
-
+/cppcms-linux.sh
+/cppdb-linux.sh
+/whattodo-*-Linux.deb

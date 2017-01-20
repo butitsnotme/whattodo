@@ -4,6 +4,7 @@
 <% template title() %><%= page_title %>: <%= id %> - <% include master::title() %><% end %>
 <% template page_content() %>
 <h2><%= todo_title %></h2>
+<p class="lead"><%= description %></p>
 <% foreach item in items %>
 <div>
 <% item %>
@@ -27,6 +28,75 @@
 <p><strong>No History</strong> Are you sure this ToDo item exists?</p>
 </div>
 <% end %>
+<% end template %>
+<% template sidebar() %>
+<% if error %>
+<div class="alert alert-danger" role="alert">
+<p><strong>Error</strong> Invalid input</p>
+</div>
+<% end if %>
+<form method="POST" action=""><% csrf %>
+<div class="form-group">
+<label for="status">Status:</label>
+<select class="form-control" name="status" id="status">
+<option value="open"<% if ("open" == content.status) %>
+  selected<% end %>>Open</option>
+<option value="done"<% if ("done" == content.status) %>
+  selected<% end %>>Done</option>
+<option value="blocked"<% if ("blocked" == content.status) %>
+  selected<% end %>>Blocked</option>
+</select>
+</div>
+<div class="form-group">
+<label for="title">Title:</label>
+<input class="form-control" type="text" id="title" name="title"
+  value="<%= todo_title %>">
+</div>
+<div class="form-group">
+<label for="description">Description:</label>
+<textarea class="form-control" id="description" name="description"
+><%= description %></textarea>
+</div>
+<div class="form-group">
+<label for="due">Date Due:</label>
+<input class="form-control" type="text" name="due" id="due" value="<%= due %>">
+</div>
+<div class="form-group">
+<label for="parent">Parent:</label>
+<input class="form-control" type="number" name="parent" id="parent" min="0"
+  value="<%= parent %>">
+</div>
+<div class="form-group">
+<label for="estimated">Estimated Time (minutes):</label>
+<input class="form-control" type="number" name="estimated" id="estimated" min="0"
+  value="<%= estimated %>">
+</div>
+<div class="form-group">
+<label for="priority">Priority (1-5):</label>
+<input class="form-control" type="number" name="priority" id="priority" min="1"
+  max="5" value="<%= priority %>">
+</div>
+<div class="form-group">
+<label for="blocking">ToDos blocking this one:</label>
+<input class="form-control" type="text" name="blocking" id="blocking"
+  value="<%= blocking %>">
+</div>
+<div class="form-group">
+<label for="work">Time worked:</label>
+<p class="form-static-control" id="work"><%= worked %></p>
+</div>
+<div class="form-group">
+<label for="worked">Add time worked (minutes):</label>
+<input class="form-control" type="number" name="worked" id="worked" value="0">
+</div>
+<div class="form-group">
+<label for="comment">Add a comment:</label>
+<textarea class="form-control" name="comment" id="comment"></textarea>
+</div>
+<div class="form-group">
+<input class="form-control" type="submit" name="submit" id="submit" value="Save">
+</div>
+</form>
 <% end template %>
 <% end view %>
 <% end skin %>

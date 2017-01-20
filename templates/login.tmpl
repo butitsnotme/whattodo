@@ -11,7 +11,8 @@
 </nav>
 <h3 class="text-muted"><% include title() %></h3>
 </div>
-<div class="content">
+<div class="row">
+<div class="col-md-4 col-md-push-4">
 <% if login_failed %>
 <div class="alert alert-danger">
 <p><strong>Access Denied!</strong> You're username and password don't match
@@ -19,8 +20,20 @@ anyone in our database</p>
 </div>
 <% end %>
 <form method="post" action=""><% csrf %>
-<% form as_p form %>
+<div class="form-group">
+<label class="control-label sr-only" for="username">Username:</label>
+<div class="input-group">
+<span class="input-group-addon">/u/</span>
+<input class="form-control input-lg" type="text" id="username" name="username" placeholder="jsmith">
+</div>
+</div>
+<div class="form-group">
+<label class="control-label sr-only" for="password">Password:</label>
+<input class="form-control input-lg" type="password" id="password" name="password" placeholder="correct horse battery staple">
+</div>
+<input type="submit" class="form-control input-lg" id="submit" name="submit" value="Login">
 </form>
+</div>
 </div>
 <% end template %>
 <% end view %>

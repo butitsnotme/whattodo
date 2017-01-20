@@ -15,9 +15,9 @@ struct login_form : public cppcms::form {
 
   login_form()
   {
-    username.message("Username");
-    password.message("Password");
-    submit.value("Login");
+    username.name("username");
+    password.name("password");
+    submit.name("submit");
     form::add(username);
     form::add(password);
     form::add(submit);

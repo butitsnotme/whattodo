@@ -1,6 +1,6 @@
 {
   "whattodo" : {
-    "connection": "sqlite3:db=todo.db"
+    "connection": "sqlite3:db=${WHATTODO_DATA_DIRECTORY}/todo.db"
   },
   "service" : {
     "api" : "http",
@@ -24,9 +24,15 @@
     },
     "server" : {
       "storage" : "files",
-      "dir" : "/tmp/whattodo/sessions"
+      "dir" : "/tmp/whattodo"
     },
     "gc" : 900
+  },
+  "logging" : {
+    "level" : "warning",
+    "syslog" : {
+      "enable" : true
+    }
   }
 }
 

@@ -1,9 +1,40 @@
 project(whattodo C CXX ASM)
 cmake_minimum_required(VERSION 3.0)
 
+# Stop CMake from building the program on install
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+set(WHATTODO_VERSION_MAJOR 0 CACHE STRING "WhatTODO Major Version" FORCE)
+set(WHATTODO_VERSION_MINOR 1 CACHE STRING "WhatTODO Minor Version" FORCE)
+set(WHATTODO_VERSION_PATCH 0 CACHE STRING "WhatTODO Patch Level" FORCE)
+
+set(WHATTODO_DATA_DIRECTORY "/var/lib/whattodo" CACHE STRING
+    "Directory where whattodo will store its data")
+
+find_program(GIT git)
+find_program(TMPLCC cppcms_tmpl_cc)
+find_program(SQLITE3 sqlite3)
+
+# Debian package properties
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 1)
+set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CMAKE_INSTALL_PREFIX "/usr")
+set(CPACK_GENERATOR "DEB")
+set(CPACK_DEBIAN_PACKAGE_NAME "whattodo")
+set(CPACK_DEBIAN_PACKAGE_VERSION ${WHATTODO_VERSION})
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "butitsnotme")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
+    "A small web-based todo manager written in C++.")
+set(CPACK_DEBIAN_PACKAGE_SECTION "web")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/butitsnotme/whattodo")
+
+
 # Extra dependencies
+include(cmake/version.cmake)
 include(CPack)
 include(FeatureSummary)
 
@@ -12,8 +43,6 @@ if(NOT CMAKE_BUILD_TYPE)
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
        FORCE)
 endif()
-
-find_program(TMPLCC cppcms_tmpl_cc)
 
 set(WHATTODO_TEMPLATES
     ${CMAKE_CURRENT_SOURCE_DIR}/templates/master.tmpl
@@ -34,21 +63,66 @@ add_custom_command(
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/approxidate)
-
-set(WHATTODO_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/todo.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/default_view.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/approxidate/approxidate.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
 
+set(WHATTODO_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo/whattodo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo/todo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo/user.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/default_view.cpp
+)
+
+set(WHATTODOCTL_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodo/user.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/whattodoctl/main.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/data.S
+)
+
+set(WHATTODO_DATA_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/VERSION
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/VERSION_TEMPLATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/VERSION_TEMPLATE_DEV
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/LICENSE
+)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/VERSION
+    ${CMAKE_CURRENT_BINARY_DIR}/data/VERSION)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/data.S
+    ${CMAKE_CURRENT_BINARY_DIR}/src/data.S)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.js
+    ${CMAKE_CURRENT_BINARY_DIR}/config.js)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/whattodo.service
+    ${CMAKE_CURRENT_BINARY_DIR}/whattodo.service)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/whattodoctl/main.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/src/whattodoctl/main.cpp)
+
+set_source_files_properties(${PROJECT_BINARY_DIR}/src/data.S
+    PROPERTIES OBJECT_DEPENDS "${WHATTODO_DATA_FILES}")
+
+find_library(CPPCMS NAME cppcms PATHS /usr/lib/)
+find_library(CPPDB NAME cppdb PATHS /usr/lib/)
+find_library(BOOSTER NAME booster PATHS /usr/lib/)
+find_library(SODIUM NAME libsodium.a PATHS /usr/lib/)
+
 add_executable(whattodo ${WHATTODO_SOURCES})
-target_link_libraries(whattodo cppcms booster cppdb)
+target_link_libraries(whattodo ${CPPDB} ${CPPCMS} ${BOOSTER} ${SODIUM})
 
-file(COPY ${PROJECT_SOURCE_DIR}/config.js
-    DESTINATION ${PROJECT_BINARY_DIR})
+add_executable(whattodoctl ${WHATTODOCTL_SOURCES})
+target_link_libraries(whattodoctl ${CPPDB} ${SODIUM})
 
-install (TARGETS whattodo DESTINATION bin)
-install (FILES ${PROJECT_BINARY_DIR}/config.js DESTINATION share/whattodo)
+install (TARGETS whattodo whattodoctl DESTINATION bin)
+install (FILES ${PROJECT_BINARY_DIR}/config.js DESTINATION /etc/whattodo)
+install (FILES ${PROJECT_SOURCE_DIR}/sql/sqlite3.sql DESTINATION share/whattodo)
+install (FILES ${PROJECT_BINARY_DIR}/whattodo.service DESTINATION /etc/systemd/system)
+

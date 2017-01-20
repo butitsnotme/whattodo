@@ -1,0 +1,10 @@
+[Unit]
+Description=ToDo list manager service
+After=syslog.target
+
+[Service]
+ExecStart=${CMAKE_INSTALL_PREFIX}/bin/whattodo -c /etc/whattodo/config.js
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

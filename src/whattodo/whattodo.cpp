@@ -9,11 +9,9 @@
 #include "content/login.h"
 #include "content/new.h"
 #include "content/todo.h"
+#include "whattodo.h"
 #include "whattodo/todo.h"
-
-extern "C" {
-#include "approxidate.h"
-}
+#include "whattodo/user.h"
 
 namespace whattodo {
 std::string format_time(int time)
@@ -21,9 +19,27 @@ std::string format_time(int time)
   std::time_t t_val = time;
   std::stringstream ss;
   ss
-    << std::put_time(std::localtime(&t_val), "%c, %Z");
+    << std::put_time(std::localtime(&t_val), "%F %T");
   return ss.str();
 }
+
+int get_time(std::string date)
+{
+  std::tm t;
+  std::stringstream ss(date);
+  ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
+  if (ss.fail()) {
+    return -1;
+  } else {
+    return static_cast<int>(std::mktime(&t));
+  }
+}
+
+bool operator==(std::shared_ptr<todo> &lhs, std::shared_ptr<todo> &rhs)
+{
+  return *lhs == *rhs;
+}
+
 }
 
 whattodo::whattodo::whattodo(cppcms::service &srv) :
@@ -48,6 +64,7 @@ whattodo::whattodo::whattodo(cppcms::service &srv) :
   mapper().root("/whattodo");
 
   ::whattodo::todo::set_session(conn);
+  user::set_session(conn);
 }
 
 void whattodo::whattodo::index(std::string url)
@@ -111,12 +128,65 @@ void whattodo::whattodo::todo(std::string url)
 
   content::todo_details td;
   td.id = t->get_id();
+  td.form.user = std::stoi(session().get("id"));
+  if ("POST" == request().request_method()) {
+    td.form.load(context());
+    if (td.form.validate()) {
+      t->set_status(td.form.status.value());
+      t->set_title(td.form.title.value());
+      t->set_description(td.form.description.value());
+      t->set_due(td.form.due_time);
+      t->set_parent(td.form.t_parent);
+      t->set_estimated(td.form.estimated.value());
+      t->set_priority(td.form.priority.value());
+      t->add_worked(td.form.worked.value());
+      t->add_comment(td.form.comment.value());
+
+      auto blocks = t->get_blocks();
+      std::list<std::shared_ptr<::whattodo::todo>> inter;
+
+      std::set_intersection(blocks.begin(), blocks.end(),
+                            td.form.blocks.begin(), td.form.blocks.end(),
+                            std::back_inserter(inter));
+
+      blocks.erase(std::set_difference(blocks.begin(), blocks.end(),
+                                       inter.begin(), inter.end(),
+                                       blocks.begin()),
+                   blocks.end());
+      td.form.blocks.erase(std::set_difference(td.form.blocks.begin(),
+                                               td.form.blocks.end(),
+                                               inter.begin(), inter.end(),
+                                               td.form.blocks.begin()),
+                           td.form.blocks.end());
+      for (auto &block : td.form.blocks) {
+        t->add_block(block);
+      }
+      for (auto &block : blocks) {
+        t->remove_block(block);
+      }
+    } else {
+      td.error = true;
+    }
+  }
+
   td.todo_title = t->get_title();
+  td.description = t->get_description();
+  td.status = t->get_status();
+  td.due = format_time(t->get_due());
+  td.parent = t->get_parent()->get_id();
+  td.estimated = t->get_estimated();
+  td.priority = t->get_priority();
+
+  int hours = t->get_worked() / 60;
+  int minutes = t->get_worked() % 60;
+  std::stringstream worked;
+  worked << hours << " hours and " << minutes << " minutes";
+  td.worked = worked.str();
 
   td.todos = get_list(td.id);
 
-  auto blocks = t->get_blocks();
-  for(auto &block : blocks) {
+  auto blocking = t->get_blocking();
+  for (auto &block : blocking) {
     content::display_item di;
     std::stringstream ss;
     ss << "Blocking: #" << block->get_id() << ": " << block->get_title();
@@ -125,6 +195,20 @@ void whattodo::whattodo::todo(std::string url)
     di.text = block->get_description();
     td.items.push_back(di);
   }
+
+  std::stringstream ss_blocking;
+  auto blocks = t->get_blocks();
+  for(auto &block : blocks) {
+    content::display_item di;
+    ss_blocking << " " << block->get_id();
+    std::stringstream ss;
+    ss << "Blocked by: #" << block->get_id() << ": " << block->get_title();
+    di.title = ss.str();
+    di.type = "warning";
+    di.text = block->get_description();
+    td.items.push_back(di);
+  }
+  td.blocking = ss_blocking.str();
 
   auto parent = t->get_parent();
   if (parent->is_valid()) {
@@ -173,9 +257,15 @@ void whattodo::whattodo::todo(std::string url)
       di.text = ss2.str();
     } else if ("parent" == h.type()) {
       auto p = h.value<std::shared_ptr<::whattodo::todo>>();
-      ss << "Changed parent: #" << p->get_id() << ": " << p->get_title();
-      di.type = "default";
-      di.text = p->get_description();
+      if (p->is_valid()) {
+        ss << "Changed parent: #" << p->get_id() << ": " << p->get_title();
+        di.type = "default";
+        di.text = p->get_description();
+      } else {
+        di.type = "default";
+        di.text = "Removed the parent";
+        ss << "Removed parent";
+      }
     } else if ("estimate" == h.type()) {
       ss << "Changed estimated completion time";
       di.type = "default";
@@ -287,30 +377,26 @@ void whattodo::whattodo::new_todo()
 
 bool whattodo::whattodo::check_login(std::string username, std::string password)
 {
-  cppdb::result res = conn << "SELECT id, salt, password FROM users WHERE "
-   "username = ?" << username << cppdb::row;
-
-  if(!res.empty()) {
-    int id = res.get<int>("id");
-    std::string salt = res.get<std::string>("salt");
-    std::string hash = res.get<std::string>("password");
-
-    if (hash == password) {
-      session().set("id", id);
-      session().set("user", username);
-      return true;
-    }
+  user u(username);
+  if (!u.verify_password(password)) {
+    return false;
   }
-  return false;
+
+  cppdb::result r = conn
+    << "SELECT id FROM users WHERE username = ?"
+    << username
+    << cppdb::row;
+
+  session().set("id", r.get<int>("id"));
+  session().set("user", username);
+
+  return true;
 }
 
 std::list<content::todo> whattodo::whattodo::get_list(int active)
 {
   std::list<content::todo> l;
-
-  struct timeval tv;
-  approxidate("now", &tv);
-  int now = tv.tv_sec;
+  int now = static_cast<int>(std::time(NULL));
 
   auto todos = todo::get_all(std::stoi(session().get("id")));
   for(auto &t: todos) {
