@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/postinst.sqlite3
+
+  dbc_dbfile_owner="whattodo:root"
+  dbc_dbfile_perms="0660"
+
+  dbc_go whattodo "$@" || true
+
+  systemctl enable whattodo || true
+  systemctl start whattodo || true

@@ -17,22 +17,20 @@ namespace whattodo {
 std::string format_time(int time)
 {
   std::time_t t_val = time;
-  std::stringstream ss;
-  ss
-    << std::put_time(std::localtime(&t_val), "%F %T");
-  return ss.str();
+  char out[100] = {0};
+  if (std::strftime(out, sizeof(out), "%F %T", std::localtime(&t_val))) {
+    return std::string(out);
+  }
+  return "";
 }
 
 int get_time(std::string date)
 {
   std::tm t;
-  std::stringstream ss(date);
-  ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
-  if (ss.fail()) {
-    return -1;
-  } else {
+  if (strptime(date.c_str(), "%Y-%m-%d %H:%M:%S", &t)) {
     return static_cast<int>(std::mktime(&t));
   }
+  return -1;
 }
 
 bool operator==(std::shared_ptr<todo> &lhs, std::shared_ptr<todo> &rhs)

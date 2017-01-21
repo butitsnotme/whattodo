@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+. /usr/share/debconf/confmodule
+
+if [ -f /usr/share/dbconfig-common/dpkg/config.sqlite3 ];
+then
+  . /usr/share/dbconfig-common/dpkg/config.sqlite3
+
+  dbc_basepath="/var/lib/whattodo/"
+  dbc_dbname="todo.db"
+  dbc_go whattodo "$@"
+fi
+

@@ -12,17 +12,19 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/xenial64"
+  config.vm.box = "debian/jessie64"
 
   config.vm.define "test", autostart: false do |test|
     test.vm.network "forwarded_port", guest: 8080, host: 8081
 
     test.vm.provision "shell", inline: <<-SHELL
+      set -x
+      export DEBIAN_FRONTEND=noninteractive
       apt-get update
-      apt-get install -y sqlite3
-      useradd -rmU -d /var/lib/whattodo whattodo
-      chown :root /var/lib/whattodo
-      chmod 770 /var/lib/whattodo
+      /vagrant/cppdb-linux.sh --prefix=/usr --exclude-subdir
+      /vagrant/cppcms-linux.sh --prefix=/usr --exclude-subdir
+      dpkg -i /vagrant/whattodo-0.1.1-Linux.deb
+      apt-get install -fy
     SHELL
   end
 
@@ -36,12 +38,14 @@ Vagrant.configure(2) do |config|
     # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
     # documentation for more information about their specific syntax and use.
     dev.vm.provision "shell", inline: <<-SHELL
-      set +x
+      set -x
       apt-get update
-      apt-get install -y cmake build-essential libpcre3-dev zlib1g-dev libgcrypt11-dev libicu-dev python libsqlite3-dev sqlite3 cmake-curses-gui
+      apt-get install -y cmake build-essential libpcre3-dev zlib1g-dev \
+       libgcrypt11-dev libicu-dev python libsqlite3-dev sqlite3 \
+       cmake-curses-gui git
     SHELL
     dev.vm.provision "shell", privileged: false, inline: <<-SHELL
-      set +x
+      set -x
       cd ~/
       tar -xjf /vagrant/cppcms.tar.bz2
       mv cppcms-* cppcms
@@ -52,15 +56,20 @@ Vagrant.configure(2) do |config|
       CPU_COUNT=$(lscpu -p | egrep -v '^#' | wc -l)
       THREADS=$(($CPU_COUNT * 2))
       make -j $THREADS
+      make package
+      cp cppcms-*.sh /vagrant/cppcms-linux.sh
   
       cd ~/
       tar -xjf /vagrant/cppdb.tar.bz2
       mv cppdb-* cppdb
       cd cppdb
+      echo "include(CPack)" >> CMakeLists.txt
       mkdir -p build
       cd build
       cmake -DCMAKE_INSTALL_PREFIX=/usr -DSQLITE_BACKEND_INTERNAL=ON -DDISABLE_PQ=ON -DDISABLE_MYSQL=ON -DDISABLE_ODBC=ON ..
       make -j $THREADS
+      make package
+      cp cppdb-*.sh /vagrant/cppdb-linux.sh
   
       cd ~/
       tar -xzf /vagrant/libsodium.tar.gz
@@ -70,12 +79,12 @@ Vagrant.configure(2) do |config|
       make -j $THREADS
     SHELL
     dev.vm.provision "shell", inline: <<-SHELL
-      set +x
-      cd /home/ubuntu/cppcms/build
+      set -x
+      cd /home/vagrant/cppcms/build
       make install
-      cd /home/ubuntu/cppdb/build
+      cd /home/vagrant/cppdb/build
       make install
-      cd /home/ubuntu/libsodium
+      cd /home/vagrant/libsodium
       make install
     SHELL
   end

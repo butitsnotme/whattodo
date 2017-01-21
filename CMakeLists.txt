@@ -4,11 +4,15 @@ cmake_minimum_required(VERSION 3.0)
 # Stop CMake from building the program on install
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if (NOT "${CMAKE_CXX_FLAGS}" MATCHES "-std=c\\+\\+14")
+  get_property(CXX_FLAGS_DESCRIPTION CACHE "CMAKE_CXX_FLAGS" PROPERTY HELPSTRING)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14" CACHE STRING
+      "${CXX_FLAGS_DESCRIPTION}" FORCE)
+endif()
 
 set(WHATTODO_VERSION_MAJOR 0 CACHE STRING "WhatTODO Major Version" FORCE)
 set(WHATTODO_VERSION_MINOR 1 CACHE STRING "WhatTODO Minor Version" FORCE)
-set(WHATTODO_VERSION_PATCH 0 CACHE STRING "WhatTODO Patch Level" FORCE)
+set(WHATTODO_VERSION_PATCH 1 CACHE STRING "WhatTODO Patch Level" FORCE)
 
 set(WHATTODO_DATA_DIRECTORY "/var/lib/whattodo" CACHE STRING
     "Directory where whattodo will store its data")
@@ -18,9 +22,9 @@ find_program(TMPLCC cppcms_tmpl_cc)
 find_program(SQLITE3 sqlite3)
 
 # Debian package properties
-set(CPACK_PACKAGE_VERSION_MAJOR 0)
-set(CPACK_PACKAGE_VERSION_MINOR 1)
-set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_VERSION_MAJOR ${WHATTODO_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${WHATTODO_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${WHATTODO_VERSION_PATCH})
 set(CMAKE_INSTALL_PREFIX "/usr")
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_NAME "whattodo")
@@ -31,6 +35,8 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
 set(CPACK_DEBIAN_PACKAGE_SECTION "web")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/butitsnotme/whattodo")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "dbconfig-common, systemd, sqlite3")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/debian/conffiles;${CMAKE_CURRENT_SOURCE_DIR}/debian/config;${CMAKE_CURRENT_SOURCE_DIR}/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/debian/preinst")
 
 
 # Extra dependencies
@@ -121,8 +127,11 @@ target_link_libraries(whattodo ${CPPDB} ${CPPCMS} ${BOOSTER} ${SODIUM})
 add_executable(whattodoctl ${WHATTODOCTL_SOURCES})
 target_link_libraries(whattodoctl ${CPPDB} ${SODIUM})
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/debian DESTINATION /)
+
 install (TARGETS whattodo whattodoctl DESTINATION bin)
 install (FILES ${PROJECT_BINARY_DIR}/config.js DESTINATION /etc/whattodo)
-install (FILES ${PROJECT_SOURCE_DIR}/sql/sqlite3.sql DESTINATION share/whattodo)
+install (FILES ${PROJECT_SOURCE_DIR}/sql/sqlite3.sql DESTINATION share/dbconfig-common/data/whattodo/install RENAME sqlite3)
 install (FILES ${PROJECT_BINARY_DIR}/whattodo.service DESTINATION /etc/systemd/system)
 
+feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

@@ -21,6 +21,7 @@ bool whattodo::user::create()
     << "INSERT OR IGNORE INTO users (username) VALUES (?)"
     << username
     << cppdb::exec;
+  return true;
 }
 
 bool whattodo::user::set_password(std::string password)
