@@ -8,10 +8,11 @@ libraries are available. It also requires the sqlite3 binary and systemd (for
 autostart).
 
 # Installation
-You can find packaged versions of cppdb and cppcms on [githubin this project's
-releases section.](https://github.com/whattodo/releases)  These (or equivalent)
-must be installed. Next install the debian package containing whatTODO (also
-found on this project's releases page). Finally, add a user to the database
+You can find packaged versions of cppdb and cppcms on [github in this project's
+releases section.](https://github.com/butitsnotme/whattodo/releases)  These (or
+equivalent) must be installed. Next install the debian package containing
+whatTODO (also found on this project's releases page). Finally, add a user to
+the database.
 
 ```bash
 sudo ./cppdb-linux.sh --prefix=/usr --exclude-subdir
